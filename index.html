@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Numberle</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for the game */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Dark gray background for dark mode */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top to give space for keyboard */
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+            color: #e2e8f0; /* Light text color for dark mode */
+        }
+
+        .game-container {
+            background-color: #2d3748; /* Slightly lighter dark background */
+            border-radius: 16px; /* Rounded corners */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3); /* Darker shadow for dark mode */
+            padding: 30px;
+            width: 100%;
+            max-width: 500px; /* Max width for desktop */
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .grid-row {
+            display: flex;
+            justify-content: center;
+            gap: 8px; /* Space between cells */
+        }
+
+        .grid-cell {
+            width: 48px; /* Fixed width for cells */
+            height: 48px; /* Fixed height for cells */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border: 2px solid #4a5568; /* Darker gray border for dark mode */
+            border-radius: 8px; /* Rounded corners for cells */
+            background-color: #4a5568; /* Darker background for cells */
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            color: #e2e8f0; /* Light text color for cells */
+        }
+
+        .grid-cell.correct {
+            background-color: #34d399; /* Green for correct */
+            border-color: #34d399;
+            color: white;
+        }
+
+        .grid-cell.present {
+            background-color: #fbbf24; /* Yellow for present */
+            border-color: #fbbf24;
+            color: white;
+        }
+
+        .grid-cell.absent {
+            background-color: #6b7280; /* Gray for absent in dark mode */
+            border-color: #6b7280;
+            color: white;
+        }
+
+        .keyboard {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr); /* 5 columns for keyboard */
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .keyboard-button {
+            padding: 15px 0;
+            font-size: 1.2rem;
+            font-weight: bold;
+            background-color: #4a5568; /* Darker gray button for dark mode */
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            color: #e2e8f0; /* Light text for keyboard buttons */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .keyboard-button:hover {
+            background-color: #6b7280; /* Slightly lighter on hover */
+            transform: translateY(-1px);
+        }
+
+        .keyboard-button:active {
+            background-color: #9ca3af; /* Even lighter on active */
+            transform: translateY(0);
+        }
+
+        .keyboard-button.large {
+            grid-column: span 2; /* Make Enter and Clear larger */
+        }
+
+        #message-box {
+            min-height: 30px;
+            color: #f87171; /* Red for error messages in dark mode */
+            font-weight: 600;
+        }
+
+        .new-game-button, .how-to-play-button {
+            background-color: #4f46e5; /* Indigo button */
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border: none;
+        }
+
+        .new-game-button:hover, .how-to-play-button:hover {
+            background-color: #4338ca; /* Darker indigo on hover */
+            transform: translateY(-1px);
+        }
+
+        .new-game-button:active, .how-to-play-button:active {
+            background-color: #3730a3; /* Even darker on active */
+            transform: translateY(0);
+        }
+
+        /* How to Play Modal Styles */
+        #how-to-play-modal {
+            background-color: rgba(0, 0, 0, 0.75); /* Darker overlay */
+        }
+
+        #how-to-play-modal > div {
+            background-color: #2d3748; /* Same as game container for consistency */
+            color: #e2e8f0; /* Light text */
+        }
+
+        #close-modal-button {
+            color: #cbd5e0; /* Lighter gray for close button */
+        }
+        #close-modal-button:hover {
+            color: #a0aec0; /* Even lighter on hover */
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .game-container {
+                padding: 15px;
+                gap: 15px;
+            }
+            .grid-cell {
+                width: 40px;
+                height: 40px;
+                font-size: 1.2rem;
+            }
+            .keyboard-button {
+                font-size: 1rem;
+                padding: 12px 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 flex justify-center items-start min-h-screen p-5">
+    <div class="game-container">
+        <h1 class="text-4xl font-bold text-gray-100 mb-4">Numberle</h1>
+        <p class="text-gray-300 mb-4">Guess the 5-digit number in 6 tries!</p>
+        <div id="game-grid" class="flex flex-col gap-2">
+            </div>
+
+        <div id="message-box" class="text-red-400 font-semibold min-h-[30px]"></div>
+
+        <div id="keyboard" class="keyboard">
+            </div>
+
+        <div class="flex justify-center gap-4 mt-4">
+            <button id="how-to-play-button" class="how-to-play-button">How to Play</button>
+            <button id="new-game-button" class="new-game-button">New Game</button>
+        </div>
+    </div>
+
+    <div id="how-to-play-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-xl max-w-md w-full text-left relative">
+            <button id="close-modal-button" class="absolute top-4 right-4 text-gray-400 hover:text-gray-200 text-2xl font-bold">&times;</button>
+            <h2 class="text-3xl font-bold text-gray-100 mb-4">How to Play Numberle</h2>
+            <p class="text-gray-300 mb-2">Guess the 5-digit number in 6 tries.</p>
+            <p class="text-gray-300 mb-2">This is a silly adaption of Josh Wardle’s Wordle!</p>
+            <p class="text-gray-300 mb-2">After each guess, the color of the tiles will change to show how close your guess was. Here are some examples!</p>
+            <div class="my-4">
+                <div class="grid-row mb-2">
+                    <div class="grid-cell correct">5</div>
+                    <div class="grid-cell">1</div>
+                    <div class="grid-cell">0</div>
+                    <div class="grid-cell">4</div>
+                    <div class="grid-cell">2</div>
+                </div>
+                <p class="text-gray-300 mb-2">The digit 5 is in the number and in the correct spot.</p>
+            </div>
+            <div class="my-4">
+                <div class="grid-row mb-2">
+                    <div class="grid-cell">7</div>
+                    <div class="grid-cell present">8</div>
+                    <div class="grid-cell">9</div>
+                    <div class="grid-cell">1</div>
+                    <div class="grid-cell">2</div>
+                </div>
+                <p class="text-gray-300 mb-2">The digit 8 is in the number but in the wrong spot.</p>
+            </div>
+            <div class="my-4">
+                <div class="grid-row mb-2">
+                    <div class="grid-cell">3</div>
+                    <div class="grid-cell">6</div>
+                    <div class="grid-cell absent">7</div>
+                    <div class="grid-cell">8</div>
+                    <div class="grid-cell">9</div>
+                </div>
+                <p class="text-gray-300 mb-2">The digit 7 is not in the number in any spot.</p>
+            </div>
+            <p class="text-gray-300 mb-2">Numbers can be repeated.</p>
+            <p class="text-gray-300">A new Numberle will be available each game!</p>
+        </div>
+    </div>
+
+    <script>
+        // Global game variables
+        const NUMBER_LENGTH = 5;   // Fixed length of the number
+        const MAX_GUESSES = 6;     // Maximum number of guesses
+        let currentGuess = '';     // User's current input
+        let currentRow = 0;        // Current row in the grid
+        let targetNumber = '';     // The number to be guessed (e.g., "12345")
+        let gameEnded = false;     // Flag to indicate if the game has ended
+
+        // DOM elements
+        const gameGrid = document.getElementById('game-grid');
+        const messageBox = document.getElementById('message-box');
+        const keyboard = document.getElementById('keyboard');
+        const newGameButton = document.getElementById('new-game-button');
+        const howToPlayButton = document.getElementById('how-to-play-button');
+        const howToPlayModal = document.getElementById('how-to-play-modal');
+        const closeModalButton = document.getElementById('close-modal-button');
+
+        // Initialize the game when the window loads
+        window.onload = initGame;
+
+        /**
+         * Initializes a new game: resets state, generates a new number, and updates the UI.
+         */
+        function initGame() {
+            currentGuess = '';
+            currentRow = 0;
+            gameEnded = false;
+            messageBox.textContent = ''; // Clear any previous messages
+            targetNumber = generateNumber(); // Generate the secret number
+            console.log('Target Number:', targetNumber); // For debugging purposes
+
+            createGrid(); // Create the visual grid
+            createKeyboard(); // Create the on-screen keyboard
+        }
+
+        /**
+         * Creates the game grid dynamically based on MAX_GUESSES and NUMBER_LENGTH.
+         */
+        function createGrid() {
+            gameGrid.innerHTML = ''; // Clear existing grid
+            for (let i = 0; i < MAX_GUESSES; i++) {
+                const row = document.createElement('div');
+                row.classList.add('grid-row');
+                for (let j = 0; j < NUMBER_LENGTH; j++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('grid-cell');
+                    cell.id = `cell-${i}-${j}`; // Unique ID for each cell
+                    row.appendChild(cell);
+                }
+                gameGrid.appendChild(row);
+            }
+        }
+
+        /**
+         * Creates the on-screen keyboard with numbers, Enter, and Clear.
+         */
+        function createKeyboard() {
+            keyboard.innerHTML = ''; // Clear existing keyboard
+            const keys = [
+                '1', '2', '3', '4', '5',
+                '6', '7', '8', '9', '0',
+                'Enter', 'Clear'
+            ];
+
+            // Adjust grid columns for the new key set
+            // The keyboard is designed to have 5 columns for digits and then Enter/Clear
+            keyboard.style.gridTemplateColumns = 'repeat(5, 1fr)';
+
+
+            keys.forEach(key => {
+                const button = document.createElement('button');
+                button.textContent = key;
+                button.classList.add('keyboard-button');
+                if (key === 'Enter') {
+                    button.style.gridColumn = 'span 3'; // Span 3 columns for Enter
+                } else if (key === 'Clear') {
+                    button.style.gridColumn = 'span 2'; // Span 2 columns for Clear
+                }
+                button.addEventListener('click', () => handleKeyPress(key));
+                keyboard.appendChild(button);
+            });
+        }
+
+        /**
+         * Generates a random 5-digit number as a string.
+         * Ensures the number is exactly 5 digits long (e.g., "01234" is possible).
+         * @returns {string} The generated 5-digit number string.
+         */
+        function generateNumber() {
+            let num = Math.floor(Math.random() * 100000).toString(); // Generate a number up to 99999
+            // Pad with leading zeros if necessary to ensure it's 5 digits
+            while (num.length < NUMBER_LENGTH) {
+                num = '0' + num;
+            }
+            return num;
+        }
+
+        /**
+         * Handles key presses from the on-screen keyboard.
+         * @param {string} key The character or action ('Enter', 'Clear') pressed.
+         */
+        function handleKeyPress(key) {
+            if (gameEnded) return; // Prevent input if game is over
+
+            messageBox.textContent = ''; // Clear previous messages
+
+            if (key === 'Enter') {
+                submitGuess();
+            } else if (key === 'Clear') {
+                currentGuess = currentGuess.slice(0, -1); // Remove last character
+                updateCurrentRowDisplay();
+            } else if (currentGuess.length < NUMBER_LENGTH) {
+                // Only allow digits to be entered
+                if (/[0-9]/.test(key)) {
+                    currentGuess += key;
+                    updateCurrentRowDisplay();
+                }
+            }
+        }
+
+        /**
+         * Updates the display of the current guess in the grid.
+         */
+        function updateCurrentRowDisplay() {
+            for (let i = 0; i < NUMBER_LENGTH; i++) {
+                const cell = document.getElementById(`cell-${currentRow}-${i}`);
+                cell.textContent = currentGuess[i] || ''; // Display character or empty string
+            }
+        }
+
+        /**
+         * Submits the current guess for evaluation.
+         */
+        function submitGuess() {
+            if (currentGuess.length !== NUMBER_LENGTH) {
+                messageBox.textContent = `Guess must be ${NUMBER_LENGTH} digits long.`;
+                return;
+            }
+
+            // Validate if the guess is a valid number
+            if (!isValidGuess(currentGuess)) {
+                messageBox.textContent = "Invalid guess. Please enter a 5-digit number.";
+                return;
+            }
+
+            // Compare guess with target number
+            const feedback = getFeedback(currentGuess, targetNumber);
+            applyFeedbackToGrid(feedback);
+
+            if (currentGuess === targetNumber) {
+                messageBox.textContent = 'Congratulations! You guessed the Numberle!';
+                gameEnded = true;
+            } else if (currentRow === MAX_GUESSES - 1) {
+                messageBox.textContent = `Game Over! The number was ${targetNumber}.`;
+                gameEnded = true;
+            } else {
+                currentRow++;
+                currentGuess = ''; // Reset for next guess
+            }
+        }
+
+        /**
+         * Validates if a given string represents a 5-digit number.
+         * @param {string} guess The user's guessed number string.
+         * @returns {boolean} True if the guess is a 5-digit number, false otherwise.
+         */
+        function isValidGuess(guess) {
+            // Check if it's exactly NUMBER_LENGTH digits and contains only numbers
+            return guess.length === NUMBER_LENGTH && /^\d+$/.test(guess);
+        }
+
+        /**
+         * Compares the guess with the target number and determines feedback for each character.
+         * @param {string} guess The user's guess.
+         * @param {string} target The secret target number.
+         * @returns {Array<string>} An array of feedback strings ('correct', 'present', 'absent').
+         */
+        function getFeedback(guess, target) {
+            const feedback = Array(NUMBER_LENGTH).fill('absent');
+            const targetChars = target.split('');
+            const guessChars = guess.split('');
+
+            // First pass: Mark 'correct' (green) and remove from consideration
+            for (let i = 0; i < NUMBER_LENGTH; i++) {
+                if (guessChars[i] === targetChars[i]) {
+                    feedback[i] = 'correct';
+                    targetChars[i] = null; // Mark as used
+                    guessChars[i] = null; // Mark as used
+                }
+            }
+
+            // Second pass: Mark 'present' (yellow)
+            for (let i = 0; i < NUMBER_LENGTH; i++) {
+                if (guessChars[i] !== null) { // If not already marked 'correct'
+                    const targetIndex = targetChars.indexOf(guessChars[i]);
+                    if (targetIndex !== -1) {
+                        feedback[i] = 'present';
+                        targetChars[targetIndex] = null; // Mark as used
+                    }
+                }
+            }
+            return feedback;
+        }
+
+        /**
+         * Applies the feedback (colors) to the cells in the current grid row.
+         * @param {Array<string>} feedback An array of feedback strings.
+         */
+        function applyFeedbackToGrid(feedback) {
+            for (let i = 0; i < NUMBER_LENGTH; i++) {
+                const cell = document.getElementById(`cell-${currentRow}-${i}`);
+                cell.classList.add(feedback[i]); // Add the appropriate class ('correct', 'present', 'absent')
+            }
+        }
+
+        // Event listener for the New Game button
+        newGameButton.addEventListener('click', initGame);
+
+        // Event listeners for How to Play modal
+        howToPlayButton.addEventListener('click', () => {
+            howToPlayModal.classList.remove('hidden');
+        });
+
+        closeModalButton.addEventListener('click', () => {
+            howToPlayModal.classList.add('hidden');
+        });
+
+    </script>
+</body>
+</html>
+
+
